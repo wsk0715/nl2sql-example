@@ -44,12 +44,18 @@ public class Nl2SqlService {
         sql = sanitize(sql);
         log.info("\nStep 2 (SQL):\n{}", sql);
 
+        // Step 2.5: Security Validation
+        if (!isSafeSelectQuery(sql)) {
+            log.error("Security Block: Invalid or dangerous SQL detected.");
+            return new QueryResult(sql, null, "보안 정책상 허용되지 않는 쿼리이거나 부적절한 요청입니다.");
+        }
+
         // Step 3: Execution
         List<Map<String, Object>> data;
         try {
             data = rawSqlMapper.executeRawSql(sql);
         } catch (Exception e) {
-            System.err.println("Execution Error: " + e.getMessage());
+            log.error("Execution Error: {}", e.getMessage());
             return new QueryResult(sql, null, "쿼리 실행 중 오류가 발생했습니다: " + e.getMessage());
         }
         log.info("\nStep 3 (Data):\n{} ", data);
@@ -63,5 +69,27 @@ public class Nl2SqlService {
 
     private String sanitize(String sql) {
         return sql.replace("```sql", "").replace("```", "").trim();
+    }
+
+    private boolean isSafeSelectQuery(String sql) {
+        if (sql == null || sql.isEmpty()) return false;
+        
+        String upperSql = sql.toUpperCase().trim();
+        
+        // 1. Must start with SELECT
+        if (!upperSql.startsWith("SELECT")) return false;
+        
+        // 2. No multi-statements
+        if (upperSql.contains(";")) return false;
+        
+        // 3. Block dangerous keywords
+        String[] forbiddenKeywords = {"INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "CREATE"};
+        for (String keyword : forbiddenKeywords) {
+            if (upperSql.contains(" " + keyword + " ") || upperSql.contains("\n" + keyword + "\n")) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }
