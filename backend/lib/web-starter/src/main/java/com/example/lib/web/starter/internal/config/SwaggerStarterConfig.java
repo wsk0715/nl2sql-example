@@ -1,4 +1,4 @@
-package com.example.lib.web.swagger.internal.config;
+package com.example.lib.web.starter.internal.config;
 
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
