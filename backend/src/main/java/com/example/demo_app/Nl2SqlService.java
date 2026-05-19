@@ -48,7 +48,7 @@ public class Nl2SqlService {
         log.info("Step 2 (SQL): {}", sql);
 
         // Step 2.5: Security Validation
-        if (!isSafeSelectQuery(sql)) {
+        if (!isSafeQuery(sql)) {
             log.error("Security Block: Invalid or dangerous SQL detected.");
             return new QueryResult(sql, null, "보안 정책상 허용되지 않는 쿼리이거나 부적절한 요청입니다.");
         }
@@ -74,14 +74,14 @@ public class Nl2SqlService {
         return sql.replace("```sql", "").replace("```", "").trim();
     }
 
-    private boolean isSafeSelectQuery(String sql) {
+    private boolean isSafeQuery(String sql) {
         if (sql == null || sql.isEmpty()) return false;
         
         String upperSql = sql.toUpperCase().trim();
         int length = upperSql.length();
         
-        // 1. Must start with SELECT
-        if (!upperSql.startsWith("SELECT")) return false;
+        // 1. Must start with SELECT or SHOW
+        if (!upperSql.startsWith("SELECT") && !upperSql.startsWith("SHOW")) return false;
         
         // 2. No multi-statements (allowing only trailing semicolon)
         int semicolonIndex = upperSql.indexOf(';');
