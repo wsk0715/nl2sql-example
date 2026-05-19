@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,12 +11,25 @@ interface Message {
 const question = ref('');
 const messages = ref<Message[]>([]);
 const isLoading = ref(false);
+const chatContainer = ref<HTMLElement | null>(null);
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (chatContainer.value) {
+    chatContainer.value.scrollTo({
+      top: chatContainer.value.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+};
 
 const ask = async () => {
   if (!question.value.trim() || isLoading.value) return;
 
   const userMsg = question.value;
   messages.value.push({ role: 'user', content: userMsg });
+  scrollToBottom();
+  
   question.value = '';
   isLoading.value = true;
 
@@ -34,8 +47,10 @@ const ask = async () => {
       sql: result.generatedSql,
       data: result.data
     });
+    scrollToBottom();
   } catch (error) {
     messages.value.push({ role: 'assistant', content: '오류가 발생했습니다. 서버 연결을 확인해주세요.' });
+    scrollToBottom();
   } finally {
     isLoading.value = false;
   }
@@ -68,7 +83,7 @@ const ask = async () => {
     <!-- Main Content: Chat -->
     <main class="flex-1 flex flex-col relative overflow-hidden">
       <!-- Chat Messages -->
-      <div class="flex-1 overflow-y-auto p-6 space-y-6 pb-32">
+      <div ref="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-6 pb-32">
         <div v-if="messages.length === 0" class="h-full flex flex-col items-center justify-center text-gray-500 gap-4">
           <div class="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center text-2xl">🤖</div>
           <p>생산 관리 데이터에 대해 무엇이든 물어보세요.</p>
